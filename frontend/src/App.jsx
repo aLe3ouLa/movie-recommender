@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMovieSearch, useMovieRecommendations } from './features/movies/queries'
 import { useDebouncedValue } from './features/movies/useDebouncedValue'
 import './App.css';
+import { Header } from './layout/header/header';
 
 function App() {
   const [query, setQuery] = useState("");
@@ -30,8 +31,7 @@ function App() {
 
   return (
     <main>
-      <h1>Movie recommender</h1>
-      <p>Search for a movie and discover similar titles.</p>
+     <Header />
 
       <input placeholder="Search for a movie" type="search" value={query} onChange={handleQueryChange} />
 
@@ -73,6 +73,11 @@ function App() {
                 <div>{movie.genres.join(' · ')}</div>
                 <div>
                   Similarity: {Math.round(movie.similarity * 100)}%
+                </div>
+
+                <div>
+                  Rating: {movie.average_rating.toFixed(1)} / 5
+                  {' '}({movie.rating_count} ratings)
                 </div>
               </li>
             ))}

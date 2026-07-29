@@ -1,0 +1,9 @@
+.nav {
+    height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+.nav ul {
+    list-style: none;
+}
