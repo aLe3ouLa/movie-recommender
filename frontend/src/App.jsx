@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMovieSearch, useMovieRecommendations } from './features/movies/queries'
-import { useDebouncedValue } from './hooks/useDebouncedValue'
+import { useDebouncedValue } from './features/movies/useDebouncedValue'
 import './App.css';
 
 function App() {
