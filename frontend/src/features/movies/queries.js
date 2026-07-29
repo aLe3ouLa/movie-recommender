@@ -13,10 +13,10 @@ export function useMovieSearch(query) {
   })
 }
 
-// export function useMovieRecommendations(movieId) {
-//   return useRepositoryQuery({
-//     queryKey: ['movies', movieId, 'recommendations'],
-//     path: `/movies/${movieId}/recommendations`,
-//     enabled: movieId !== null,
-//   })
-// }
+export function useMovieRecommendations(movieId) {
+  return useRepositoryQuery({
+    queryKey: ['movies', movieId, 'recommendations'],
+    path: `/movies/${movieId}/recommendations`,
+    enabled: movieId !== null || movieId !== undefined,
+  })
+}
