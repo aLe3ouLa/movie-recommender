@@ -1,7 +1,12 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.recommender import ( recommend_similar_movies, search_movies)
+from backend.recommender import ( 
+     find_audience_also_liked,
+     find_similar_movies, 
+     recommend_similar_movies, 
+     search_movies, 
+     recommend_for_user)
 
 app = FastAPI(
     title="Movie Recommender API",
@@ -44,4 +49,47 @@ def recommendations(
         raise HTTPException(
             status_code=404,
             detail=str(error)
+        ) from error
+    
+@app.get("/movies/{movie_id}/similar")
+def similar_movies(
+    movie_id: int,
+    limit: int = Query(default=10, ge=1, le=50),
+):
+        try:
+            return find_similar_movies(movie_id, limit)
+        except ValueError as error:
+            raise HTTPException(
+                status_code=404,
+                detail=str(error),
+            ) from error
+
+
+@app.get("/movies/{movie_id}/audience-also-liked")
+def audience_also_liked(
+    movie_id: int,
+    limit: int = Query(default=10, ge=1, le=50),
+):
+        try:
+            return find_audience_also_liked(movie_id, limit)
+        except ValueError as error:
+            raise HTTPException(
+                status_code=404,
+                detail=str(error),
+            ) from error
+
+@app.get("/users/{user_id}/recommendations")
+def user_recommendations(
+    user_id: int,
+    limit: int = Query(default=10, ge=1, le=50),
+):
+    try:
+        return recommend_for_user(
+            user_id=user_id,
+            limit=limit,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=404,
+            detail=str(error),
         ) from error
