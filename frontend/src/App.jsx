@@ -1,89 +1,50 @@
 import { useState } from 'react'
-import { useMovieSearch, useMovieRecommendations } from './features/movies/queries'
-import { useDebouncedValue } from './features/movies/useDebouncedValue'
-import './App.css';
-import { Header } from './layout/header/header';
+import { Navbar } from './layout/navbar/Navbar'
+import { Footer } from './layout/footer/Footer'
+import { Hero } from './features/landingpage/Hero'
+import { PopularGrid } from './features/movies/PopularGrid'
+import { RecommendationsPanel } from './features/movies/RecommendationsPanel'
+import { GenrePicker } from './features/movies/GenrePicker'
+import { PredictedScore } from './features/movies/PredictedScore'
+import { About } from './features/about/About'
+import { useViewerId } from './features/user/useViewerId'
+import './App.css'
 
 function App() {
-  const [query, setQuery] = useState("");
-  const [selectedMovieId, setSelectedMovieId] = useState("");
+  const [selectedMovie, setSelectedMovie] = useState(null)
+  const [viewerId, setViewerId] = useViewerId()
 
-  const debouncedQuery = useDebouncedValue(query, 300)
+  function handleSelectMovie(movie) {
+    setSelectedMovie(movie)
 
-  const {
-    data: movies = [],
-    error,
-    isError,
-    isFetching,
-  } = useMovieSearch(debouncedQuery)
-
-  const {
-    data: recommendations = [],
-    error: recommendationError,
-    isError: isRecommendationError,
-    isFetching: isLoadingRecommendations,
-  } = useMovieRecommendations(selectedMovieId)
-
-  function handleQueryChange(event) {
-    setQuery(event.target.value)
-    setSelectedMovieId(null)
+    requestAnimationFrame(() => {
+      document.getElementById('movie-detail')?.scrollIntoView({ behavior: 'smooth' })
+    })
   }
 
   return (
     <main>
-     <Header />
+      <Navbar onSelectMovie={handleSelectMovie} viewerId={viewerId} onViewerIdChange={setViewerId} />
 
-      <input placeholder="Search for a movie" type="search" value={query} onChange={handleQueryChange} />
+      <Hero />
 
-      {selectedMovieId}
-      {isError ? <p>{error.message}</p> : null}
+      <PopularGrid onSelectMovie={handleSelectMovie} />
 
-      {
+      {selectedMovie && (
+        <RecommendationsPanel
+          movieId={selectedMovie.movie_id}
+          movieTitle={selectedMovie.title}
+          onSelectMovie={handleSelectMovie}
+        />
+      )}
 
-        query && !isFetching && !error && movies.length > 0 ?
+      <GenrePicker onSelectMovie={handleSelectMovie} />
 
-          <div>
-            {movies.map((movie) => {
-              return <button key={movie.movie_id} onClick={() => setSelectedMovieId(movie.movie_id)}>
-                <strong>{movie.title}</strong>
-                <div>{movie.genres.join(' | ')}</div>
-              </button>
-            })}
-          </div>
+      <PredictedScore viewerId={viewerId} onViewerIdChange={setViewerId} />
 
-          : <p>No movies found.</p>
-      }
+      <About />
 
-      {selectedMovieId && <section>
-        <h2>Movies similar to {movies.filter(movie => movie.movieId === selectedMovieId)?.[0]?.title}</h2>
-
-        {isLoadingRecommendations && (
-          <p>Finding recommendations…</p>
-        )}
-
-        {isRecommendationError && (
-          <p>{recommendationError.message}</p>
-        )}
-
-        {!isLoadingRecommendations && (
-          <ul>
-            {recommendations.map((movie) => (
-              <li key={movie.movie_id}>
-                <strong>{movie.title}</strong>
-                <div>{movie.genres.join(' · ')}</div>
-                <div>
-                  Similarity: {Math.round(movie.similarity * 100)}%
-                </div>
-
-                <div>
-                  Rating: {movie.average_rating.toFixed(1)} / 5
-                  {' '}({movie.rating_count} ratings)
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>}
+      <Footer />
     </main>
   )
 }

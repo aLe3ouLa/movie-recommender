@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 import pandas as pd
@@ -13,6 +15,7 @@ DATA_DIR = PROJECT_ROOT / "data/ml-latest-small"
 
 movies = pd.read_csv(DATA_DIR / "movies.csv")
 ratings = pd.read_csv(DATA_DIR / "ratings.csv")
+links = pd.read_csv(DATA_DIR / "links.csv")
 
 GLOBAL_AVERAGE = ratings["rating"].mean()
 RATING_PRIOR = 25
@@ -28,6 +31,12 @@ rating_stats = (
 
 movies = movies.merge(
     rating_stats,
+    on="movieId",
+    how="left",
+)
+
+movies = movies.merge(
+    links[["movieId", "tmdbId"]],
     on="movieId",
     how="left",
 )
@@ -141,6 +150,7 @@ def search_movies(query: str, limit: int = 10) -> list[dict]:
             "movie_id": int(row.movieId),
             "title": row.title,
             "genres": row.genres.split("|"),
+            "tmdb_id": int(row.tmdbId) if pd.notna(row.tmdbId) else None,
         }
         for row in matches.itertuples()
     ]
@@ -217,6 +227,7 @@ def recommend_similar_movies(
                 float(ranking_scores[index]),
                 3,
             ),
+            "tmdb_id": tmdb_id_for(movies.iloc[index]),
         }
         for index in ranked_indices
     ]
@@ -232,6 +243,11 @@ def get_movie_index(movie_id: int) -> int:
     return int(matching_movies[0])
 
 
+def tmdb_id_for(movie) -> int | None:
+    tmdb_id = movie["tmdbId"]
+    return int(tmdb_id) if pd.notna(tmdb_id) else None
+
+
 def movie_record(index: int) -> dict:
     movie = movies.iloc[index]
 
@@ -244,6 +260,7 @@ def movie_record(index: int) -> dict:
             2,
         ),
         "rating_count": int(movie["rating_count"]),
+        "tmdb_id": tmdb_id_for(movie),
     }
 
 
@@ -454,3 +471,50 @@ def recommend_for_user(
         }
         for index in ranked_indices
     ]
+
+
+def get_popular_movies(limit: int = 10) -> list[dict]:
+    """Return the highest weighted-rating movies overall."""
+
+    ranked = movies.sort_values(
+        "weighted_rating",
+        ascending=False,
+    ).head(limit)
+
+    return [movie_record(index) for index in ranked.index]
+
+
+def list_genres() -> list[str]:
+    """Return the distinct genre tags present in the catalog."""
+
+    all_genres = set()
+
+    for genre_list in movies["genres"].str.split("|"):
+        all_genres.update(genre_list)
+
+    all_genres.discard("(no genres listed)")
+
+    return sorted(all_genres)
+
+
+def get_movies_by_genre(genre: str, limit: int = 10) -> list[dict]:
+    """Return the highest weighted-rating movies within a genre."""
+
+    matches = movies[
+        movies["genres"].str.contains(
+            genre,
+            case=False,
+            regex=False,
+            na=False,
+        )
+    ]
+
+    if matches.empty:
+        raise ValueError(f"Genre not found: {genre}")
+
+    ranked = matches.sort_values(
+        "weighted_rating",
+        ascending=False,
+    ).head(limit)
+
+    return [movie_record(index) for index in ranked.index]
